@@ -1,4 +1,4 @@
-# unusedCSS
+# unusedCSS - Keep your (S)CSS files maintainable
 PHP CLI script to detect unused CSS by walking through all your application files during development.
 
 # Why
