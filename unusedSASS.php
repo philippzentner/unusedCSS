@@ -7,17 +7,17 @@
 
 
 $PATH = "/path/to/your/application";
-$outputFileName = 'unusedCss.txt';
+$outputFileName = 'unusedSass.txt';
 
 
 // Default pattern
-$pattern = '/\.-?[_a-zA-Z]+[_a-zA-Z0-9-]*\s*\{/';
-$replace = [' {', '.'];
-$searchFor = 'CSS classes';
-$searchIn = 'others';
-
+$pattern = '/\$-?[_a-zA-Z0-9-]+[_a-zA-Z0-9-]\:/';
+$replace = [':'];
+$searchFor = 'SASS variables';
+$searchIn = 'css';
 
 if($argc > 0){
+
     // Check for path
     foreach($argv as $v){
         $len = strlen($v);
@@ -44,8 +44,6 @@ function getFilesRecursive($dir, $results = ['css'=> [], 'others'=>[]]){
         if(!is_dir($path)) {
             if(strpos($path, '.scss') || strpos($path, '.css')){
                 $results['css'][] = $path;
-            } else {
-                $results['others'][] = $path;
             }
         } else if($value !== "." && $value !== "..") {
             $results = getFilesRecursive($path, $results);
@@ -59,44 +57,57 @@ function getFilesRecursive($dir, $results = ['css'=> [], 'others'=>[]]){
 $listOfAllFiles = getFilesRecursive($PATH);
 
 // Get all searched strings
-$cssClasses = [];
+$sassVars = [];
 foreach($listOfAllFiles['css'] as $cssFile){
     $content = file_get_contents($cssFile);
     preg_match_all($pattern, $content, $listOfAllCssClassesInFile);
-    if(count($listOfAllCssClassesInFile[0]) > 1){
-        $cssClasses = array_merge($cssClasses, $listOfAllCssClassesInFile[0]);
-    }
+    $sassVars = array_merge($sassVars, $listOfAllCssClassesInFile[0]);
 }
 
 // Get clean strings
-foreach($cssClasses as $key => $value){
-    $cssClasses[$key] = str_replace($replace, '', $value);
+foreach($sassVars as $key => $value){
+    $sassVars[$key] = str_replace($replace, '', $value);
 }
 
 // Backup
-$unusedCssClasses = $cssClasses;
+$sassVarsUncounted = $sassVars;
 
-// Create final list
-// The goal ist to go through each file and check if the string is used. If not, delete.
+
+// Create list of variable usages
+$sassVarUsages = [];
 foreach($listOfAllFiles[$searchIn] as $file){
     $fileContent = file_get_contents($file);
-    foreach($unusedCssClasses as $class_key => $class_name){
-        if(strpos($fileContent, $class_name) !== false){
-            unset($unusedCssClasses[$class_key]);
+
+    foreach($sassVarsUncounted as $var_key => $var_name){
+        if(strpos($fileContent, $var_name) !== false){
+            if(isset($sassVarUsages[$var_name])){
+                ++$sassVarUsages[$var_name];
+            }else{
+                $sassVarUsages[$var_name] = 1;
+            }
         }
     }
 }
 
-// Unused CSS classes
-$unusedCssClassesAsText = '';
-foreach($unusedCssClasses as $unusedCssClass){
-    $unusedCssClassesAsText .= $unusedCssClass.PHP_EOL;
+
+foreach($sassVarUsages as $var_name => $var_count){
+    if($var_count > 1){
+        unset($sassVarUsages[$varName]);
+    }
 }
 
-file_put_contents($outputFileName, $unusedCssClassesAsText);
+$unusedSassVars = array_values(array_flip($sassVarUsages));
+
+// Unused CSS classes
+$unusedSassVarssAsText = '';
+foreach($unusedSassVars as $unusedSassVar){
+    $unusedSassVarssAsText .= $unusedSassVar.PHP_EOL;
+}
+
+file_put_contents($outputFileName, $unusedSassVarssAsText);
 
 echo "Amount S(CSS) files:".count($listOfAllFiles['css']).PHP_EOL;
 echo "Amount other files:".count($listOfAllFiles['others']).PHP_EOL;
-echo "Amount ".$searchFor.":".count($cssClasses).PHP_EOL;
-echo "Amount unused ".$searchFor.":".count($unusedCssClasses).PHP_EOL;
+echo "Amount ".$searchFor.":".count($sassVars).PHP_EOL;
+echo "Amount unused ".$searchFor.":".count($unusedSassVars).PHP_EOL;
 echo $searchFor." written to: ".$outputFileName.PHP_EOL;
