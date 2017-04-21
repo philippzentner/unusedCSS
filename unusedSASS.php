@@ -6,7 +6,7 @@
  */
 
 
-$PATH = "/path/to/your/application";
+$PATH = "./";
 $outputFileName = 'unusedSass.txt';
 
 
