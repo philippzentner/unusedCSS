@@ -77,31 +77,28 @@ $sassVarsUncounted = $sassVars;
 $sassVarUsages = [];
 foreach($listOfAllFiles[$searchIn] as $file){
     $fileContent = file_get_contents($file);
-
     foreach($sassVarsUncounted as $var_key => $var_name){
-        if(strpos($fileContent, $var_name) !== false){
-            if(isset($sassVarUsages[$var_name])){
-                ++$sassVarUsages[$var_name];
-            }else{
-                $sassVarUsages[$var_name] = 1;
-            }
+        $amount = substr_count($fileContent, $var_name);
+        if(isset($sassVarUsages[$var_name])){
+            $sassVarUsages[$var_name] += $amount;
+        }else{
+            $sassVarUsages[$var_name] = $amount;
         }
     }
 }
 
-
 foreach($sassVarUsages as $var_name => $var_count){
     if($var_count > 1){
-        unset($sassVarUsages[$varName]);
+        unset($sassVarUsages[$var_name]);
     }
 }
 
-$unusedSassVars = array_values(array_flip($sassVarUsages));
+$unusedSassVars = $sassVarUsages;
 
 // Unused CSS classes
 $unusedSassVarssAsText = '';
-foreach($unusedSassVars as $unusedSassVar){
-    $unusedSassVarssAsText .= $unusedSassVar.PHP_EOL;
+foreach($unusedSassVars as $unusedSassVarName => $unusedSassVarValue){
+    $unusedSassVarssAsText .= $unusedSassVarName.PHP_EOL;
 }
 
 file_put_contents($outputFileName, $unusedSassVarssAsText);
